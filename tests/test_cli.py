@@ -3,6 +3,7 @@ import types
 
 from m3u_to_crates.cli import (
     convert_playlist_to_crate,
+    normalize_m3u_entry,
     parse_m3u,
     sanitize_crate_name,
 )
@@ -21,6 +22,17 @@ def test_parse_m3u_returns_non_comment_tracks(tmp_path):
 def test_sanitize_crate_name_replaces_windows_unsafe_characters():
     assert sanitize_crate_name('Bad:Name/Here?.') == "Bad_Name_Here_"
     assert sanitize_crate_name("...") == "Imported"
+
+
+def test_normalize_m3u_entry_strips_leading_slash_before_windows_drive():
+    assert str(normalize_m3u_entry("/D:/Music/song.mp3")) == "D:\\Music\\song.mp3"
+    assert str(normalize_m3u_entry(r"\D:\Music\song.mp3")) == "D:\\Music\\song.mp3"
+
+
+def test_normalize_m3u_entry_decodes_file_urls():
+    assert str(normalize_m3u_entry("file:///D:/My%20Music/song.mp3")) == (
+        "D:\\My Music\\song.mp3"
+    )
 
 
 def test_convert_playlist_adds_track_objects(tmp_path, monkeypatch):

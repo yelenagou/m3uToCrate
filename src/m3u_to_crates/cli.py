@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 import sys
 import traceback
+from urllib.parse import unquote, urlparse
+
+
+WINDOWS_DRIVE_PATH = re.compile(r"^[\\/]+([A-Za-z]:[\\/].*)$")
 
 
 def parse_m3u(m3u_path: Path) -> list[str]:
@@ -34,6 +39,19 @@ def sanitize_crate_name(name: str) -> str:
     return cleaned or "Imported"
 
 
+def normalize_m3u_entry(entry: str) -> Path:
+    """Normalize an M3U track entry into a local filesystem path."""
+    parsed = urlparse(entry)
+    if parsed.scheme == "file":
+        entry = unquote(parsed.path)
+
+    match = WINDOWS_DRIVE_PATH.match(entry)
+    if match:
+        entry = match.group(1)
+
+    return Path(entry)
+
+
 def convert_playlist_to_crate(
     m3u_path: Path, serato_root: Path, skip_missing: bool = True
 ) -> tuple[str, int, int]:
@@ -47,7 +65,7 @@ def convert_playlist_to_crate(
     skipped = 0
 
     for entry in parse_m3u(m3u_path):
-        track_path = Path(entry)
+        track_path = normalize_m3u_entry(entry)
 
         # Relative paths in M3U are relative to the playlist file.
         if not track_path.is_absolute():
