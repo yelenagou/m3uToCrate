@@ -10,6 +10,7 @@ from urllib.parse import unquote, urlparse
 
 
 WINDOWS_DRIVE_PATH = re.compile(r"^[\\/]+([A-Za-z]:[\\/].*)$")
+WINDOWS_DRIVE_MARKER = re.compile(r"[A-Za-z]:[\\/]")
 
 
 def parse_m3u(m3u_path: Path) -> list[str]:
@@ -48,6 +49,10 @@ def normalize_m3u_entry(entry: str) -> Path:
     match = WINDOWS_DRIVE_PATH.match(entry)
     if match:
         entry = match.group(1)
+
+    drive_markers = list(WINDOWS_DRIVE_MARKER.finditer(entry))
+    if len(drive_markers) > 1:
+        entry = entry[drive_markers[-1].start():]
 
     return Path(entry)
 

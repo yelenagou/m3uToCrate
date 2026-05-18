@@ -35,6 +35,15 @@ def test_normalize_m3u_entry_decodes_file_urls():
     )
 
 
+def test_normalize_m3u_entry_collapses_embedded_windows_drive():
+    assert str(normalize_m3u_entry(r"D:\D:\Music\song.mp3")) == (
+        "D:\\Music\\song.mp3"
+    )
+    assert str(normalize_m3u_entry(r"D:\Playlists\D:\Music\song.mp3")) == (
+        "D:\\Music\\song.mp3"
+    )
+
+
 def test_convert_playlist_adds_track_objects(tmp_path, monkeypatch):
     playlist = tmp_path / "sample.m3u"
     track = tmp_path / "track.mp3"
