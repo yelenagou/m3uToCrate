@@ -57,10 +57,57 @@ def normalize_m3u_entry(entry: str) -> Path:
     return Path(entry)
 
 
+def format_serato_track_path(track_path: Path) -> str:
+    """Format a local path the way Serato expects it inside crate files."""
+    path_text = str(Path(track_path).resolve()).replace("\\", "/")
+    match = re.match(r"^([A-Za-z]):/(.*)$", path_text)
+    if match:
+        return f"/{match.group(1)}:/{match.group(2)}"
+    return path_text
+
+
+def save_crate(crate, serato_root: Path) -> None:
+    """Save a crate while writing Windows track paths in Serato's path format."""
+    from pyserato.builder import Builder
+    from pyserato.util import serato_encode
+
+    class SeratoPathBuilder(Builder):
+        def _construct(self, crate) -> bytes:
+            header = "vrsn".encode("latin1")
+            header += (0).to_bytes(1, byteorder="big")
+            header += (0).to_bytes(1, byteorder="big")
+            header += serato_encode("81.0")
+            header += serato_encode("/Serato ScratchLive Crate")
+
+            column_section = bytes()
+            for column in ["track", "artist", "album", "length"]:
+                column_section += "ovct".encode()
+                column_section += (len(column) * 2 + 18).to_bytes(4, "big")
+                column_section += "tvcn".encode()
+                column_section += (len(column) * 2).to_bytes(4, "big")
+                column_section += serato_encode(column)
+                column_section += "tvcw".encode()
+                column_section += (2).to_bytes(4, "big")
+                column_section += "0".encode()
+                column_section += "0".encode()
+
+            playlist_section = bytes()
+            for track in crate.tracks:
+                serato_path = format_serato_track_path(track.path)
+                playlist_section += "otrk".encode("latin1")
+                playlist_section += (len(serato_path) * 2 + 8).to_bytes(4, "big")
+                playlist_section += "ptrk".encode("latin1")
+                playlist_section += (len(serato_path) * 2).to_bytes(4, "big")
+                playlist_section += serato_encode(serato_path)
+
+            return header + column_section + playlist_section
+
+    SeratoPathBuilder().save(crate, save_path=serato_root, overwrite=True)
+
+
 def convert_playlist_to_crate(
     m3u_path: Path, serato_root: Path, skip_missing: bool = True
 ) -> tuple[str, int, int]:
-    from pyserato.builder import Builder
     from pyserato.model.crate import Crate
     from pyserato.model.track import Track
 
@@ -91,8 +138,7 @@ def convert_playlist_to_crate(
             skipped += 1
             print(f"    [skip error] {track_path} -> {e}")
 
-    builder = Builder()
-    builder.save(crate, save_path=serato_root, overwrite=True)
+    save_crate(crate, serato_root)
 
     return crate_name, added, skipped
 

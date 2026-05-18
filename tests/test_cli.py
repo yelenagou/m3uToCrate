@@ -1,8 +1,10 @@
+from pathlib import Path
 import sys
 import types
 
 from m3u_to_crates.cli import (
     convert_playlist_to_crate,
+    format_serato_track_path,
     normalize_m3u_entry,
     parse_m3u,
     sanitize_crate_name,
@@ -44,6 +46,10 @@ def test_normalize_m3u_entry_collapses_embedded_windows_drive():
     )
 
 
+def test_format_serato_track_path_uses_slash_prefixed_windows_drive():
+    assert format_serato_track_path(Path(r"D:\Music\song.mp3")) == "/D:/Music/song.mp3"
+
+
 def test_convert_playlist_adds_track_objects(tmp_path, monkeypatch):
     playlist = tmp_path / "sample.m3u"
     track = tmp_path / "track.mp3"
@@ -81,15 +87,18 @@ def test_convert_playlist_adds_track_objects(tmp_path, monkeypatch):
     model = types.ModuleType("pyserato.model")
     crate = types.ModuleType("pyserato.model.crate")
     track_module = types.ModuleType("pyserato.model.track")
+    util = types.ModuleType("pyserato.util")
     builder.Builder = FakeBuilder
     crate.Crate = FakeCrate
     track_module.Track = FakeTrack
+    util.serato_encode = lambda value: value.encode()
 
     monkeypatch.setitem(sys.modules, "pyserato", pyserato)
     monkeypatch.setitem(sys.modules, "pyserato.builder", builder)
     monkeypatch.setitem(sys.modules, "pyserato.model", model)
     monkeypatch.setitem(sys.modules, "pyserato.model.crate", crate)
     monkeypatch.setitem(sys.modules, "pyserato.model.track", track_module)
+    monkeypatch.setitem(sys.modules, "pyserato.util", util)
 
     crate_name, added, skipped = convert_playlist_to_crate(playlist, serato_root)
 
