@@ -21,3 +21,12 @@ m3u-to-crates "D:\Playlists" "D:\_Serato_"
 ```powershell
 pytest
 ```
+
+## Build Windows Executable
+
+```powershell
+python -m pip install pyinstaller
+python -m PyInstaller --onefile --name m3u-to-crates --paths src src\m3u_to_crates\cli.py
+```
+
+The executable will be created at `dist\m3u-to-crates.exe`.
