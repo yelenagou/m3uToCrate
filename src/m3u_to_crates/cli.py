@@ -39,6 +39,7 @@ def convert_playlist_to_crate(
 ) -> tuple[str, int, int]:
     from pyserato.builder import Builder
     from pyserato.model.crate import Crate
+    from pyserato.model.track import Track
 
     crate_name = sanitize_crate_name(m3u_path.stem)
     crate = Crate(crate_name)
@@ -60,7 +61,7 @@ def convert_playlist_to_crate(
             raise FileNotFoundError(track_path)
 
         try:
-            crate.add_track(str(track_path))
+            crate.add_track(Track.from_path(track_path))
             added += 1
         except Exception as e:
             # pyserato may raise duplicate-track errors or path-related issues.
