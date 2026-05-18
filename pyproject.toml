@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "m3u-to-crates"
+version = "0.1.0"
+description = "Utilities for working with M3U playlists."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Intri" }
+]
+dependencies = [
+  "pyserato"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "ruff>=0.4.0"
+]
+
+[project.scripts]
+m3u-to-crates = "m3u_to_crates.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
